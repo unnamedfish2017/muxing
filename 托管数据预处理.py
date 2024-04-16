@@ -156,11 +156,6 @@ import pandas as pd
 import numpy as np
 import os,pickle
 import pandas as pd
-path=f'{DATA_PATH}/daily_data/data_daily.pickle'
-with open(path, 'rb') as f:
-    data_daily = pickle.load(f)
-closew = data_daily['closew'].fillna(method='ffill')
-lst_trd_day=closew.index[-1].strftime('%Y%m%d')
 
 from 报表函数 import *
 ios_all,ods_all=get_records(root)
