@@ -10,11 +10,15 @@ import warnings
 import os,pickle
 warnings.filterwarnings('ignore')
 
+DATA_PATH = '/home/vscode/workspace/data/store/rsync'
+root_sc='/home/vscode/workspace/work/生产/素材'
+root_save='/home/vscode/workspace/work/生产/产出/盘后分析'
+
 
 # In[2]:
 
 
-path='/home/jovyan/data/store/rsync/data_daily/data_daily.pickle'
+path=f'{DATA_PATH}/data_daily/data_daily.pickle'
 with open(path, 'rb') as f:
     data_daily = pickle.load(f)
 for v in ['closew','openw','highw','loww','amtw']:
@@ -39,7 +43,7 @@ for v in ['closew','openw','highw','loww','amtw']:
 # In[5]:
 
 
-root='..//..//持仓数据'
+root=f'{root_sc}/托管数据'
 mls=os.listdir(root)
 df=pd.read_parquet(os.path.join(root,max([i for i in mls if i.startswith('盘后权益')])))
 df.日期=pd.to_datetime(df.日期.astype(str))
@@ -79,7 +83,7 @@ dfraw.loc[:,'策略']=dfraw.loc[:,'策略'].str.cat(dfraw.account)
 dfraw=dfraw[(dfraw.持有市值>=100000)&(~dfraw.账户.str.contains('PAPER'))]
 dfraw.loc[:,'策略大类']=dfraw.loc[:,'策略'].apply(lambda x:x.split('_')[0])
 
-root='..//..//原始数据_托管'
+root=f'{root_sc}/托管数据'
 mls=os.listdir(root)
 tp=pd.read_csv(os.path.join(root,max([i for i in mls if i.startswith('全部_')])))
 detailraw = tp[获取指增标记(tp)]
@@ -144,32 +148,21 @@ df.策略.unique()
 
 指数列表={'zz500':'399905.SZ','hs300':'399300.SZ','zz1000':'000852.SH','zzqa':'000985.SH'}
 for 基准 in 指数列表.keys():
-    dfbase=pd.read_parquet('..//..//持仓数据//%s.parquet'%指数列表[基准])
+    dfbase=pd.read_parquet(f'{root_sc}/指数基准/%s.parquet'%指数列表[基准])
 #     if dfbase.index[-1]<df.日期.max():
 #         %cd ..//../代码
 #         %run 更新指数基准.py
 #         %cd ..//盘后分析//代码
 
 
-# In[12]:
-
-
 dts=list(closew.index)
 dfraw=dfraw[dfraw.日期>=dts[-60]]
 
 
-# In[13]:
-
-
-#dfraw[dfraw.日期==dfraw.日期.max()]
-
-
-# In[14]:
-
 
 def get(基准):
     指数列表={'zz500':'399905.SZ','hs300':'399300.SZ','zz1000':'000852.SH','zzqa':'000985.SH'}
-    dfbase=pd.read_parquet('..//..//持仓数据//%s.parquet'%指数列表[基准])
+    dfbase=pd.read_parquet(f'{root_sc}/指数基准/%s.parquet'%指数列表[基准])
     dfbase.loc[:,基准]=dfbase.close.pct_change()
     df=dfraw.merge(dfbase.reset_index().rename(columns={'trade_date':'日期'})[['日期',基准]])
 #     df.loc[:,'alpha']=df['当日收益率_剔除仓位变化']-df[基准]
@@ -303,31 +296,18 @@ df4=df4[df4.策略.str.startswith(('E3'))]
 df=df1.append(df2).append(df3).append(df4).reset_index(drop=True)#.rename(columns={'当日收益率_剔除仓位变化':'当日收益率'})
 
 
-# In[16]:
-
-
 df=df[df.日期>=dts[-20]]
 
-
-# In[17]:
 
 
 df[['超额当前回撤','超额连续回撤']]=np.round(df[['超额当前回撤','超额连续回撤']]*100,1)
 
 
-# In[18]:
-
-
 df[df.策略=='SISUBA_rwdma']
 
 
-# In[19]:
+#df.to_excel('策略超额汇总.xlsx',index=False)
 
-
-df.to_excel('策略超额汇总.xlsx',index=False)
-
-
-# In[20]:
 
 
 分析名称='指增策略超额分析'
@@ -336,12 +316,9 @@ tp=df.rename(columns={'alpha':'当日超额'})[df.日期==df.日期.max()][['日
 tp=tp.set_index(['日期','策略'])[分析列].stack().reset_index()
 tp.columns=['日期','A属性','B属性','取值']
 tp.loc[:,'分析名称']=分析名称
-path='..//产出//%s//%s.xlsx'%(分析名称,tp.日期.max().strftime('%Y%m%d'))
+path=f'{root_save}//%s//%s.xlsx'%(分析名称,tp.日期.max().strftime('%Y%m%d'))
 tp.loc[:,'日期']=tp.日期.apply(lambda x:x.strftime('%Y/%m/%d'))
 tp[['日期','A属性','B属性','分析名称','取值']].to_excel(path,index=False)
-
-
-# In[21]:
 
 
 import requests
@@ -356,9 +333,6 @@ headers = {
            }
 response = requests.request("POST", url, headers=headers, data=payload, files=files, verify=False)
 print(response.text)
-
-
-# In[22]:
 
 
 # dts_tp=list(df[df.日期>='2023-05-01'].日期.unique())
@@ -387,27 +361,8 @@ print(response.text)
 #     print(response.text)
 
 
-# In[23]:
-
-
-import os
-command = 'jupyter nbconvert --to script *.ipynb'
-os.system(command)
-
-
-# In[24]:
-
-
-tp.A属性.unique()
-
-
-# In[25]:
-
 
 tp=df.rename(columns={'alpha':'当日超额'})[df.日期==df.日期.max()][['日期','账户','策略']+分析列].reset_index(drop=True)
-
-
-# In[26]:
 
 
 tp.loc[:,'基准']=tp.loc[:,'策略'].apply(lambda x:x[:2])
@@ -419,7 +374,7 @@ tp.loc[:,'算法']=tp.loc[:,'策略'].apply(lambda x:x[2:4])
 
 import requests
 #root='..//output'
-root='..//产出//汇总_指增超额'
+root=f'{root_save}//汇总_指增超额'
 filename='汇总_指增超额.xlsx'
 path=os.path.join(root,filename)
 
@@ -458,10 +413,6 @@ dfout=dfout[~dfout.策略.str.contains('合计')].reset_index(drop=True)
 #dfout.loc[:,'日期']=dfout.日期.apply(lambda x:x.strftime('%Y/%m/%d'))
 dfout.to_excel(path)
 
-
-# In[29]:
-
-
 url="https://61.172.245.225:26829/profit-mgt/api/v1/posthours-analysis/excess-returns-table/import"
 payload={}
 files=[
@@ -475,39 +426,6 @@ headers = {
 response = requests.request("POST", url, headers=headers, data=payload, files=files, verify=False)
 print(response.text)
 
-
-# In[30]:
-
-
 dfout.算法.unique()
-
-
-# In[31]:
-
-
 dfout[dfout.策略=='SISIG_sydma']
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 

@@ -241,8 +241,11 @@ print(t2 - t1)
 系统_盘后持仓=[]
 dts=list(closew.index)
 for dt in dts[-70:]:
-    tp=pd.read_parquet(f'{root}/系统_盘后持仓_%s.parquet'%dt.strftime('%Y%m%d'))
-    系统_盘后持仓.append(tp)
+    try:
+        tp=pd.read_parquet(f'{root}/系统_盘后持仓_%s.parquet'%dt.strftime('%Y%m%d'))
+        系统_盘后持仓.append(tp)
+    except:
+        print(f'{root}/系统_盘后持仓_%s.parquet'%dt.strftime('%Y%m%d')+' loss')
 系统_盘后持仓=pd.concat(系统_盘后持仓)
 
 
@@ -276,7 +279,7 @@ for (i,j),data in ios_all.groupby(['账户','策略']):
 盘后权益.loc[:,'当日收益']=盘后权益.盘后权益-盘后权益.盘前权益
 盘后权益.loc[:,'当日收益率']=盘后权益.当日收益/(盘后权益.盘后权益-盘后权益.当日收益)
 盘后权益.loc[:,'当日收益率_剔除仓位变化']=盘后权益.当日收益/(盘后权益.groupby(['账户','策略']).持有市值.shift(1).fillna(np.nan))
-盘后权益.to_parquet('..//持仓数据//盘后权益_%s.parquet'%closew.index[-1].strftime('%Y%m%d'))
+盘后权益.to_parquet(f'{root}//盘后权益_%s.parquet'%closew.index[-1].strftime('%Y%m%d'))
 
 
 # In[ ]:

@@ -61,36 +61,13 @@ dfraw.loc[:,'策略']=dfraw.loc[:,'策略'].str.cat(dfraw.account)
 dfraw=dfraw[(~dfraw.账户.str.contains('PAPER'))]
 dfraw.loc[:,'策略大类']=dfraw.loc[:,'策略'].apply(lambda x:x.split('_')[0])
 
-
-# In[4]:
-
-
-dfraw.账户.unique()
-
-
-# In[5]:
-
-
 dfraw.loc[:,'wk']=dfraw.买入日期.apply(lambda x:x.week)
 dfraw.loc[:,'mon']=dfraw.买入日期.apply(lambda x:x.month)
 wks=sorted(list(dfraw.wk.unique()))
 最近日期=dfraw.买入日期.max()
 
 
-# In[6]:
-
-
-dfraw.to_excel('tmp.xlsx')
-
-
-# In[7]:
-
-
 df[(df.策略.str.startswith('MaMlMix'))&(df.账户=='心宿二 开源 KMAX SM')]
-
-
-# In[8]:
-
 
 ret_all=[]
 for cl,dfraw_ in dfraw.groupby('策略'):
@@ -126,10 +103,6 @@ for cl,dfraw_ in dfraw.groupby('策略'):
 ret_all=pd.concat(ret_all)
 ret_all.loc[:,'日期']=df.买入日期.max()
 
-
-# In[9]:
-
-
 分析名称='MA收益胜率分析'
 tp=ret_all[['日期','A属性','B属性','取值']]
 tp.loc[:,'分析名称']=分析名称
@@ -155,28 +128,16 @@ response = requests.request("POST", url, headers=headers, data=payload, files=fi
 print(response.text)
 
 
-# In[11]:
-
-
 import os
 command = 'jupyter nbconvert --to script *.ipynb'
 os.system(command)
 
-
-# In[12]:
-
-
 ret_all[ret_all.A属性=='MaMlMix_xx2']
 
-
-# In[13]:
 
 
 tp=pd.read_csv('..//..//原始数据_托管//全部_%s.csv'%lst_trd_day)
 tp=tp[tp.策略.isin(['MaAl1315','MaAl13'])]
-
-
-# In[14]:
 
 
 res=None
@@ -195,13 +156,9 @@ for v in 账户列表:
         res=res.merge(t,how='outer')
 
 
-# In[15]:
-
 
 tp.groupby(['账户','策略']).总收益.sum()
 
-
-# In[16]:
 
 
 res.to_excel('..//产出//MA.xlsx')
