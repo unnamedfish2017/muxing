@@ -9,7 +9,8 @@ warnings.filterwarnings("ignore")
 import pickle,os
 import pandas as pd
 import numpy as np
-path='/home/jovyan/work/commons/data/daily_data/data_daily.pickle'
+DATA_PATH = '/home/vscode/workspace/data/store/rsync'
+path=f'{DATA_PATH}/data_daily/data_daily.pickle'
 with open(path, 'rb') as f:
     data_daily = pickle.load(f)
 for v in ['closew','openw','highw','loww','amtw','WA_names_cn']:
@@ -21,7 +22,9 @@ dts=[i.strftime('%Y%m%d') for i in closew.index[-20:]]
 # In[2]:
 
 
-root='/home/jovyan/work/workspaces/daily report/次日列表/EIF候选池'
+root='/home/vscode/workspace/work/生产/产出/票池/EIF候选池'
+root_sc='/home/vscode/workspace/work/生产/素材'
+root_save='/home/vscode/workspace/work/生产/产出/盘后分析'
 import os
 EIF_mls=os.listdir(root)
 
@@ -48,7 +51,7 @@ dfraw.loc[:,'code']=dfraw.code_sm.apply(lambda x:x[-6:]+'.'+x[:2].lower())
 # In[4]:
 
 
-tp1=pd.read_csv('/home/jovyan/data/store/rsync/data_daily//申万行业股票列表2022_renew.csv',encoding='gbk')
+tp1=pd.read_csv(f'{root_sc}/申万行业股票列表2022_renew.csv',encoding='gbk')
 #tp=tp[['code','申万一级','申万二级']].rename(columns={'code':'股票代码'})
 dfraw1=dfraw.merge(tp1,how='left').rename(columns={'name':'标的名称','申万一级':'申万一级行业','申万二级':'申万二级行业'})
 
@@ -68,7 +71,7 @@ def get_base(tkpath,index_code):
     ybase.columns=['日期','收益base']
     dfbase=dfbase.reset_index()
     return dfbase
-tkpath='/home/jovyan/work/commons/data/daily_data/tk.txt'
+tkpath=f'{root_sc}/tk.txt'
 base_index='000985.SH'
 dfbase=get_base(tkpath,base_index).set_index('trade_date')
 
@@ -107,7 +110,7 @@ dfraw1.loc[:,'信号类型']='指增信号'
 dfraw1=dfraw1.rename(columns={'date':'信号日期','code':'标的代码'})[clms]
 dfraw1=dfraw1[dfraw1.信号日期<closew.index[-1]]
 dfraw1.loc[:,'1日收益,3日收益,5日收益,20日收益,1日超额,3日超额,5日超额,20日超额'.split(',')]=np.round(dfraw1.loc[:,'1日收益,3日收益,5日收益,20日收益,1日超额,3日超额,5日超额,20日超额'.split(',')]*100,1)
-path='..//产出//信号看板//指增信号.csv'
+path=f'{root_save}/信号看板//指增信号.csv'
 dfraw1.to_csv(path,index=False,encoding='utf-8')
 
 
@@ -127,43 +130,6 @@ data = {
 files = { 'uploadFile': (path.split('/')[-1], open(path, 'r')) }
 response = requests.post(url, headers=headers, data=data, files=files,verify=False)
 files['uploadFile'][1].close()
-response
-
-
-# In[11]:
-
-
-# clms='信号名称,标的代码,信号日期,信号类型,标的名称,申万一级行业,申万二级行业,1日收益,3日收益,5日收益,20日收益,1日超额,3日超额,5日超额,20日超额'.split(',')
-# dfraw1.loc[:,'信号类型']='指增信号'
-# dfraw1=dfraw1.rename(columns={'date':'信号日期','code':'标的代码'})[clms]
-# for dt in dts[70:]:
-#     tp=dfraw1[dfraw1.信号日期==pd.to_datetime(dt)]
-#     tp.loc[:,'1日收益,3日收益,5日收益,20日收益,1日超额,3日超额,5日超额,20日超额'.split(',')]=np.round(tp.loc[:,'1日收益,3日收益,5日收益,20日收益,1日超额,3日超额,5日超额,20日超额'.split(',')]*100,1)
-#     path='..//产出//信号看板//指增信号.csv'
-#     tp.to_csv(path,index=False,encoding='utf-8')
-#     import requests
-
-#     url = "https://61.172.245.225:26829/signal-board/api/v1/public/import/raw"
-#     headers = {
-#         'Authorization': 'Bearer f28d8c4a-5965-4f11-a0c4-09ca35eed126',
-#         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36'
-#     }
-#     data = {
-#         'Authorization': 'Bearer f28d8c4a-5965-4f11-a0c4-09ca35eed126',
-#     }
-#     files = { 'uploadFile': (path.split('/')[-1], open(path, 'r')) }
-#     response = requests.post(url, headers=headers, data=data, files=files,verify=False)
-#     files['uploadFile'][1].close()
-#     print(dt,response)
-
-
-# In[12]:
-
-
-#dfraw1.groupby(['信号名称']).标的代码.count()
-
-
-# In[ ]:
 
 
 

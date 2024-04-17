@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/jovyan/work/workspaces/daily report/实盘模型/模型文件/周频策略')
+sys.path.append('/home/vscode/workspace/work/生产/脚本')
 import pickle
 from EIFBT import *
 import pandas as pd
@@ -7,8 +7,13 @@ import os
 import numpy as np
 import warnings 
 import datetime
+DATA_PATH = '/home/vscode/workspace/data/store/rsync'
+root_sc='/home/vscode/workspace/work/生产/素材'
+root_save='/home/vscode/workspace/work/生产/产出/数据集'
+
+
 warnings.filterwarnings("ignore")
-path='/home/jovyan/data/store/rsync/data_daily/data_daily.pickle'
+path=f'{DATA_PATH}/data_daily/data_daily.pickle'
 with open(path, 'rb') as f:
     data_daily = pickle.load(f)
 for v in ['closew','openw','highw','loww','amtw']:
@@ -20,7 +25,8 @@ import tushare as ts
 import time
 import pandas as pd
 import tushare as ts
-tkpath='/home/jovyan/work/commons/data/daily_data/tk.txt'
+
+tkpath=f'{root_sc}/tk.txt'
 tk=pd.read_csv(tkpath).columns[0]
 ts.set_token(tk)###最新20220607
 pro = ts.pro_api()
@@ -47,10 +53,9 @@ y=y.stack().rename('收益').reset_index().rename(columns={'date':'日期','code
 y=y[(~y.股票代码.str.endswith('.bj'))&(y.日期==closew.index[-1])].reset_index(drop=True)
 data_set=tp.merge(y,how='left')
 
-DATA_PATH = '/home/jovyan/data/store/rsync/'
 params={
-'path':'/home/jovyan/data/store/rsync/data_daily/data_daily.pickle',
-'path_':'/home/jovyan/work/commons/data/daily_data/stock_day_n.parquet',
+'path':f'{DATA_PATH}/data_daily/data_daily.pickle',
+'path_':f'{DATA_PATH}/stock_day_n.parquet',
 
 '通联因子路径':f'{DATA_PATH}/factor_data/A股精品因子数据.parquet',
 '日线常规因子路径':f'{DATA_PATH}/data_daily/日线常规指标.parquet',
@@ -84,7 +89,7 @@ del data_set_raw
 import pickle
 
 # 从文件中读取字典
-with open('all_factor.pickle', 'rb') as f:
+with open(f'{root_sc}/all_factor.pickle', 'rb') as f:
     all_dict = pickle.load(f)
 
     
@@ -312,7 +317,6 @@ import tushare as ts
 import time
 import pandas as pd
 import tushare as ts
-tkpath='/home/jovyan/work/commons/data/daily_data/tk.txt'
 tk=pd.read_csv(tkpath).columns[0]
 ts.set_token(tk)###最新20220607
 pro = ts.pro_api()
@@ -328,14 +332,13 @@ lst_trd_day=str(df_.cal_date.values[-1])
 nxt_trd_day=dts_open[dts_open.index(lst_trd_day)+1]
 nxt_trd_day_=nxt_trd_day[:4]+'-'+nxt_trd_day[4:6]+'-'+nxt_trd_day[-2:]
 
-basic_data_dict_raw={}
-try:
-    basic_data_dict_raw['INDEX_COMPONENT_AND_WEIGHT'] = pd.read_parquet('/home/jovyan/data/store/rsync/facts-stockpool/basic/%s/index_component_and_weight.parquet'%nxt_trd_day)
-except:
-    basic_data_dict_raw['INDEX_COMPONENT_AND_WEIGHT'] = pd.read_parquet('/home/jovyan/data/store/rsync/facts-stockpool/basic/%s/index_component_and_weight.parquet'%lst_trd_day)
-import tushare as ts
-tkpath='/home/jovyan/work/commons/data/daily_data/tk.txt'
-DATA_PATH = '/home/jovyan/data/store/rsync/'
+# basic_data_dict_raw={}
+# try:
+#     basic_data_dict_raw['INDEX_COMPONENT_AND_WEIGHT'] = pd.read_parquet('/home/jovyan/data/store/rsync/facts-stockpool/basic/%s/index_component_and_weight.parquet'%nxt_trd_day)
+# except:
+#     basic_data_dict_raw['INDEX_COMPONENT_AND_WEIGHT'] = pd.read_parquet('/home/jovyan/data/store/rsync/facts-stockpool/basic/%s/index_component_and_weight.parquet'%lst_trd_day)
+# import tushare as ts
+
 tk=pd.read_csv(tkpath).columns[0]
 ts.set_token(tk)###最新20220607
 pro = ts.pro_api()
@@ -354,6 +357,6 @@ df_prevday_facts_raw.loc[:,'tonghuashun.ST']=df_prevday_facts_raw.loc[:,'tonghua
 df_prevday_facts_raw.loc[:,'tonghuashun.delisting']=df_prevday_facts_raw.loc[:,'tonghuashun.delisting'].fillna(0)
 
 
-root='/home/jovyan/work/workspaces/daily report/实盘模型/每日数据'
-df_prevday_facts_raw.to_parquet(f'{root}/%s_prevday_daily_facts_full_002.parquet'%nxt_trd_day_)
-df_60d_facts_raw.to_parquet(f'{root}/%s_60d_daily_facts_small_002.parquet'%nxt_trd_day_)
+
+df_prevday_facts_raw.to_parquet(f'{root_save}/%s_prevday_daily_facts_full_002.parquet'%nxt_trd_day_)
+df_60d_facts_raw.to_parquet(f'{root_save}/%s_60d_daily_facts_small_002.parquet'%nxt_trd_day_)
