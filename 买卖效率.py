@@ -9,15 +9,21 @@ import pandas as pd
 import numpy as np
 import os,pickle
 import pandas as pd
-path='/home/jovyan/work/commons/data/daily_data/data_daily.pickle'
+
+DATA_PATH = '/home/vscode/workspace/data/store/rsync'
+root_sc='/home/vscode/workspace/work/生产/素材'
+root_cd='/home/vscode/workspace/work/生产/脚本'
+root_save='/home/vscode/workspace/work/生产/产出/票池/其他'
+
+path=f'{DATA_PATH}/data_daily/data_daily.pickle'
 with open(path, 'rb') as f:
     data_daily = pickle.load(f)
 closew = data_daily['closew'].fillna(method='ffill')
 lst_trd_day=closew.index[-1].strftime('%Y%m%d')
-root='..//..//原始数据_托管'
+root=f'{root_sc}/托管数据'
 
 import sys
-sys.path.append('..//..//代码')
+sys.path.append(root_cd)
 from 报表函数 import *
 ios_all,ods_all=get_records(root)
 
@@ -25,57 +31,18 @@ ods_all.loc[:,'日期']=pd.to_datetime(ods_all.DealDateTime.apply(lambda x:x.dat
 ods_all.loc[:,'TradedVolume']=ods_all.loc[:,'TradedVolume'].astype(float)
 ods_all.loc[:,'Amt']=ods_all.loc[:,'TradedPrice'].astype(float)*ods_all.loc[:,'TradedVolume'].astype(float)
 ods_all.loc[:,'tm']=ods_all.DealDateTime.apply(lambda x:x.strftime('%H%M'))
-
-
-# In[2]:
-
-
-#ods_all[ods_all.日期==ods_all.日期.max()].sort_values(by='TradedVolume')
-
-
-# In[3]:
-
-
-#ods_all[(ods_all.OrderRef.str.contains('MIYUAN'))&(~ods_all.OrderRef.str.contains('T0_MIYUAN'))]
-
-
-# In[4]:
-
-
 ods_all[ods_all.日期==ods_all.日期.max()].ProductName.unique()
-
-
-# In[5]:
-
-
-#ods_all[ods_all.OrderRef.str.contains('FT_VWAP_AI_PLUS')]
-#ods_all[ods_all.OrderRef.str.contains('HX_SMART_VWAP')].sample().OrderRef.values[0]
-
-
-# In[6]:
-
-
 ods_all[(ods_all.日期==ods_all.日期.max())&(ods_all.ProductName=='HX_XYSS')].sort_values(by='Amt')
-
-
-# In[7]:
-
-
 ods_all[ods_all.日期==ods_all.日期.max()].groupby(['日期','ProductName','StrategyName','BuySell']).Amt.sum()
 
-
-# In[8]:
-
-
-# tm_st=132000000
-# tm_et=133000000
 
 def get_p(dt,stk,tm_st,tm_et):
     dt=str(dt)
     y=dt[:4]
     m=dt[4:6]
     d=dt[6:]
-    path='/home/jovyan/data/store/stock/data_/second_3'+'/year='+str(y)+'/month='+str(m)+'/date='+str(d)+'/'+stk.lower()+'.parquet'
+    
+    path='/home/vscode/workspace/data/store/stock/data_/second_3'+'/year='+str(y)+'/month='+str(m)+'/date='+str(d)+'/'+stk.lower()+'.parquet'
 
     df_sec=pd.read_parquet(path, engine='pyarrow').reset_index(drop=True)
     t1=df_sec[df_sec.Time>=tm_et].iloc[0,:].to_dict()
@@ -88,23 +55,6 @@ def get_p(dt,stk,tm_st,tm_et):
     except:
         lp=0
     return dt,stk,p_st,avg_p,lp
-
-# ret=[]
-# for k in tp_unq.index:
-#     v=tp_unq.loc[k,:]
-#     dt=v['日期'].strftime('%Y%m%d')
-#     stk=v['Instrument'][-6:]+'.'+v['Instrument'][:2].lower()
-#     ret.append(get_p(dt,stk,tm_st,tm_et))
-
-
-# In[9]:
-
-
-#ods_all[ods_all.OrderRef.str.contains('T0_KaFang')]
-
-
-# In[10]:
-
 
 tm_st=93000000
 tm_et=93300000
@@ -135,9 +85,6 @@ tp.loc[:,'algo']=tp.OrderRef.apply(lambda s:extract_and_match(s))
 tp.loc[(tp.ProductName.isin(['GT_XYSS'])|(tp.ProductName.str.startswith('HT_')))&(tp.algo=='VWAPPLUS'),'algo']='KF_VWAPPLUS'
 
 
-# In[12]:
-
-
 tp.algo=tp.algo.str.cat(tp.ProductName,sep='_')
 
 
@@ -162,16 +109,7 @@ for 账户 in 集合成交.StrategyName.apply(lambda x:'_'.join(x.split('_')[1:]
 集合成交=集合成交.groupby(['StrategyName', 'ProductName', 'BuySell', '日期'])['集合成交'].sum().rename('集合成交').reset_index()
 
 
-# In[ ]:
-
-
-
-
-
-# In[15]:
-
-
-tp_hist=pd.read_parquet('历史标的开盘表现.parquet')
+tp_hist=pd.read_parquet('/home/vscode/workspace/work/生产/产出/盘后分析/历史开盘表现/历史标的开盘表现.parquet')
 list_hist=list(tp_hist.日期.apply(lambda x:x.strftime('%Y%m%d')).str.cat(tp_hist.Instrument.apply(lambda x:x[-6:]+'.'+x[:2].lower())))
 
 
@@ -235,14 +173,8 @@ tp=pd.DataFrame(tp,columns=['date','code','p_st','p_avg','lp'])
 tp.loc[:,'日期']=pd.to_datetime(tp.date.astype(str))
 tp.loc[:,'Instrument']=tp.code.apply(lambda x:'SHSE.S+'+x[:6] if x.endswith('.sh') else 'SZSE.S+'+x[:6])
 
+tp_hist.append(tp).reset_index(drop=True).to_parquet('/home/vscode/workspace/work/生产/产出/盘后分析/历史开盘表现/历史标的开盘表现.parquet')
 
-# In[18]:
-
-
-tp_hist.append(tp).reset_index(drop=True).to_parquet('历史标的开盘表现.parquet')
-
-
-# In[19]:
 
 
 tp=tp_hist.append(tp).reset_index(drop=True)
@@ -262,15 +194,7 @@ ret.loc[:,'perform_p']=ret.Price_traded/ret.p_st
 ret.loc[:,'perform_q']=ret.Price_traded/ret.p_avg
 ret=ret.dropna(subset=['StrategyName','ProductName','Instrument','日期','RequestDateTime','TradedVolume'])
 
-
-# In[21]:
-
-
 ret[ret.日期==ret.日期.max()].rename(columns={'p_st':'开盘价','p_avg':'均价','perform_p':'相对开盘价','perform_q':'相对均价'}).ProductName.unique()
-
-
-# In[22]:
-
 
 ret.loc[ret.BuySell=='Buy','相对开盘价']=1-ret.perform_p
 ret.loc[ret.BuySell=='Sell','相对开盘价']=ret.perform_p-1
@@ -278,13 +202,8 @@ ret.loc[ret.BuySell=='Buy','相对均价']=1-ret.perform_q
 ret.loc[ret.BuySell=='Sell','相对均价']=ret.perform_q-1
 
 
-# In[23]:
+#ret[ret.日期==ret.日期.max()].reset_index(drop=True).to_excel('最近成交效率统计.xlsx')
 
-
-ret[ret.日期==ret.日期.max()].reset_index(drop=True).to_excel('最近成交效率统计.xlsx')
-
-
-# In[24]:
 
 
 t0=ret.copy()
@@ -387,32 +306,6 @@ tp=tp.rename('千分之（延迟收益）').reset_index()
 tp.columns=['策略','账户','方向','日期','千分之（延迟收益）']
 output=output.merge(tp,how='left')
 
-
-# In[29]:
-
-
-ret[ret.flag_delay==1].groupby('日期')['Amt','delay_profit'].sum()
-
-
-# In[30]:
-
-
-# tp=pd.concat(存疑挂单)[['ProductName','StrategyName','BuySell','日期','Instrument','RequestDateTime','RequestPrice','lp']].rename(columns={'lp':'57秒价格'}).reset_index(drop=True)
-# tp.loc[:,'理论报价']=np.nan
-# tp.loc[tp.BuySell=='Buy','理论报价']=np.round(tp['57秒价格']*1.001,2)
-# tp.loc[tp.BuySell=='Sell','理论报价']=np.round(tp['57秒价格']*0.999,2)
-# tp.to_excel('存疑报价.xlsx',index=False)
-
-
-# In[31]:
-
-
-#output[output.日期==output.日期.max()].sort_values(by='交易额w',ascending=False)
-
-
-# In[32]:
-
-
 ret_all1=output[output.方向=='Buy'].set_index(['日期','策略']).sort_values(by='交易额w')[[ '交易额w','千分之（相对开盘）','千分之（相对均价）','集合成交比例','千分之（延迟收益）','存疑率']].stack().reset_index()
 ret_all1.columns=['日期','A属性','B属性','取值']
 ret_all1.B属性=ret_all1.B属性.apply(lambda x:'买'+x)
@@ -440,7 +333,7 @@ ret_all=ret_all.append(ret3)
 tp=ret_all[['日期','A属性','B属性','取值']]
 tp=tp[tp.日期>=closew.index[-5]]
 tp.loc[:,'分析名称']=分析名称
-path='..//产出//%s//%s.xlsx'%(分析名称,closew.index[-1].strftime('%Y%m%d'))
+path='/home/vscode/workspace/work/生产/产出/盘后分析//%s//%s.xlsx'%(分析名称,closew.index[-1].strftime('%Y%m%d'))
 tp.loc[:,'日期']=tp.日期.apply(lambda x:x.strftime('%Y/%m/%d'))
 tp[['日期','A属性','B属性','分析名称','取值']].to_excel(path,index=False)
 
@@ -492,62 +385,18 @@ t[t.r_tm=='0924']
 t=ret_all[ret_all.A属性=='合计'].set_index(['日期','B属性'])[['取值']].unstack()['取值']
 t.loc[:,['合计千分之（相对均价）','合计千分之（相对开盘）']].tail(20).median()
 
-
-# In[38]:
-
-
-# t=ods_all[(ods_all.日期>='2023-09-01')&(ods_all.ProductName=='HC_SZLH')&(ods_all.StrategyName.str.startswith('E'))]
-# t=t[(t.StrategyName=='E1LG90A')|(t.StrategyName=='E1TF90T')]
-# t
-
-
-# In[39]:
-
-
-#ret[(ret.日期>='2023-09-01')&(~ret.StrategyName.str.startswith('E'))].groupby('ProductName')[['相对开盘价','相对均价']].mean()*1000
-
-
-# In[40]:
-
-
 output[(output.策略.str.contains('合计'))]
-
-
-# In[41]:
-
-
 tp=output[(output.策略.isin(['hc_szlh','ky_cy','gt_xyss','gl_sz_alpha','hx_xyss','ht_ss']))&(output.日期>=closew.index[-5])]
-
-
-# In[42]:
-
 
 t1=tp.groupby('策略').apply(lambda x:(x.交易额w*x['千分之（相对均价）']).sum())/tp.groupby('策略').apply(lambda x:(x.交易额w).sum())
 t2=tp.groupby('策略').apply(lambda x:(x.交易额w).sum())
 t=pd.concat([t1,t2],axis=1)
 t.columns=['绩效','交易额w']
 
-
-# In[43]:
-
-
 t1=tp.groupby('策略').apply(lambda x:(x.交易额w*x['千分之（相对开盘）']).sum())/tp.groupby('策略').apply(lambda x:(x.交易额w).sum())
 t2=tp.groupby('策略').apply(lambda x:(x.交易额w).sum())
 t=pd.concat([t1,t2],axis=1)
 t.columns=['绩效','交易额w']
-
-
-# In[44]:
-
-
-# dts_tp=dts[-20:]
-# tp=output[(output.策略.isin(['hc_szlh','ky_cy','gt_xyss','gl_sz_alpha','hx_xyss','ht_ss','ht_mws','E1TF90T_hc_szlh','E1LG90A_hc_szlh','EALG98A_gl_sz_alpha']))&(output.日期.isin(dts_tp))]
-# t1=tp.groupby('策略').apply(lambda x:(x.交易额w*x['千分之（相对均价）']).sum())/tp.groupby('策略').apply(lambda x:(x.交易额w).sum())
-# t2=tp.groupby('策略').apply(lambda x:(x.交易额w).sum())
-# t=pd.concat([t1,t2],axis=1)
-# t.columns=['绩效','交易额w']
-# t
-
 
 # ################################绩效临时
 
@@ -561,7 +410,6 @@ t1=tp.groupby('策略').apply(lambda x:(x.交易额w*x['千分之（相对均价
 t2=tp.groupby('策略').apply(lambda x:(x.交易额w).sum())
 t=pd.concat([t1,t2],axis=1)
 t.columns=['绩效','交易额w']
-t
 
 
 # ##############################20日绩效
@@ -591,7 +439,7 @@ ret_hz.取值=np.round(ret_hz.取值,2)
 分析名称='换仓绩效20日平均'
 tp=ret_hz[['日期','A属性','B属性','取值']]
 tp.loc[:,'分析名称']=分析名称
-path='..//产出//%s//%s.xlsx'%(分析名称,tp.日期.max().strftime('%Y%m%d'))
+path='/home/vscode/workspace/work/生产/产出/盘后分析//%s//%s.xlsx'%(分析名称,tp.日期.max().strftime('%Y%m%d'))
 tp.loc[:,'日期']=tp.日期.apply(lambda x:x.strftime('%Y/%m/%d'))
 tp[['日期','A属性','B属性','分析名称','取值']].to_excel(path,index=False)
 
@@ -651,7 +499,7 @@ pd.concat([t2,t3],axis=1)
 # 分析名称='换仓绩效5日平均'
 # tp=ret_hz[['日期','A属性','B属性','取值']]
 # tp.loc[:,'分析名称']=分析名称
-# path='..//产出//%s//%s.xlsx'%(分析名称,tp.日期.max().strftime('%Y%m%d'))
+# path='/home/vscode/workspace/work/生产/产出/盘后分析//%s//%s.xlsx'%(分析名称,tp.日期.max().strftime('%Y%m%d'))
 # tp.loc[:,'日期']=tp.日期.apply(lambda x:x.strftime('%Y/%m/%d'))
 # tp[['日期','A属性','B属性','分析名称','取值']].to_excel(path,index=False)
 
@@ -710,52 +558,9 @@ t1=ods_all[(ods_all.日期==ods_all.日期.max())].groupby('ProductName').Amt.su
 t2=ods_all[(ods_all.日期==ods_all.日期.max())&(ods_all.tm>='0940')&(ods_all.tm<='0959')].groupby('ProductName').Amt.sum()
 
 
-# In[54]:
-
-
-(t2/t1).fillna(0).sort_values()
-
-
-# In[55]:
-
-
 ods_all.loc[:,'r_tm']=ods_all.RequestDateTime.apply(lambda x:x.strftime('%H%M'))
 t1=ods_all[(ods_all.日期==pd.to_datetime('20231124'))].groupby('ProductName').Amt.sum()
 t2=ods_all[(ods_all.日期==pd.to_datetime('20231124'))&(ods_all.tm>='0940')&(ods_all.tm<='0959')].groupby('ProductName').Amt.sum()
-
-
-# In[56]:
-
-
-(t2/t1).fillna(0).sort_values()
-
-
-# ##########################近期换仓表现
-
-# In[57]:
-
-
-strategy_name='EAAL98A'
-sig=ret[(ret.日期>='20230601')&(ret.Amt>=5000)&(ret.StrategyName.str.contains(strategy_name))][['code','date','BuySell']].drop_duplicates()
-sig.date=pd.to_datetime(sig.date)
-sig.loc[:,'m']=sig.date.apply(lambda x:x.strftime('%Y%m'))
-
-
-# In[58]:
-
-
-openw = data_daily['openw']
-closew = data_daily['closew']
-sy={}
-for i in range(1,6):
-    sy[i]=(closew.shift(-i+1)/openw-1).stack().rename('sy_%s'%str(i)).reset_index()
-    sig=sig.merge(sy[i],how='left')
-
-
-# In[59]:
-
-
-sig.groupby(['m','BuySell'])[['sy_1','sy_2','sy_3','sy_4','sy_5']].mean()
 
 
 # ##########################T0收益监控
@@ -796,116 +601,4 @@ tp.delta.sum()/tp.amt.sum(),tp.amt.sum()/10000
 # In[63]:
 
 
-ods_all[ods_all.T0_MIYUAN==1].to_parquet('/home/jovyan/work/commons/T0_orders.parquet')
-
-
-# ##########################临时
-
-# In[64]:
-
-
-strategy_name='EAIG98A'
-sig=ret[(ret.日期>='20230601')&(ret.Amt>=5000)&(ret.StrategyName.str.contains(strategy_name))][['code','date','BuySell']].drop_duplicates()
-sig.date=pd.to_datetime(sig.date)
-sig.loc[:,'m']=sig.date.apply(lambda x:x.strftime('%Y%m'))
-sig.loc[:,'HG']=0
-sig0=sig.copy()
-
-strategy_name='EAIG35AHG10'
-sig=ret[(ret.日期>='20230601')&(ret.Amt>=5000)&(ret.StrategyName.str.contains(strategy_name))][['code','date','BuySell']].drop_duplicates()
-sig.date=pd.to_datetime(sig.date)
-sig.loc[:,'m']=sig.date.apply(lambda x:x.strftime('%Y%m'))
-sig.loc[:,'HG']=1
-
-sig=sig.append(sig0).drop_duplicates(['code','date','BuySell'],keep='first')
-
-openw = data_daily['openw']
-closew = data_daily['closew']
-sy={}
-for i in range(1,6):
-    sy[i]=(closew.shift(-i+1)/openw-1).stack().rename('sy_%s'%str(i)).reset_index()
-    sig=sig.merge(sy[i],how='left')
-sig[sig.HG==0].groupby(['m','BuySell'])[['sy_1','sy_2','sy_3','sy_4','sy_5']].mean()
-
-
-# In[65]:
-
-
-sig[sig.HG==1].groupby(['m','BuySell'])[['sy_1','sy_2','sy_3','sy_4','sy_5']].mean()
-
-
-# In[66]:
-
-
-sig.to_excel('换出明细.xlsx')
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[67]:
-
-
-def f(k):
-    s=0
-    for i in range(1,k+1):
-        s+=k/float(i)
-    return s
-tp=[]
-for k in range(6,109):
-    tp.append((k,f(k)))
-pd.DataFrame(tp)
-
-
-# In[68]:
-
-
-
-# path='..//产出//%s//%s.xlsx'%('指增收益归因分析','20240219')
-
-# import requests
-
-# url = "https://61.172.245.225:26829/profit-mgt/api/v1/posthours-analysis/import"
-# payload = {}
-# files = [('file',
-#           (path.split('/')[-1], open(path, 'rb'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))]
-# headers = {
-#     'Authorization': 'Bearer f28d8c4a-5965-4f11-a0c4-09ca35eed126',
-#     "User-Agent": "curl/7.78.0"
-#            }
-# response = requests.request("POST", url, headers=headers, data=payload, files=files, verify=False)
-# print(response.text)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+#ods_all[ods_all.T0_MIYUAN==1].to_parquet('/home/jovyan/work/commons/T0_orders.parquet')
